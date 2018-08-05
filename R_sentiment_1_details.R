@@ -30,7 +30,7 @@ gutenberg_works(author == "Shakespeare, William") %>%
   filter(str_detect(title, "Romeo|Nothing")) %>%
   select(gutenberg_id, title)
 
-# 4. Download the needed books ----------------------------------------------------------------
+# 4. Download the needed books (vector / list / array?) ----------------------------------------
 shakespeare <- gutenberg_download(c(1513, 1519), meta_fields = "title")
 # breaks into:
 
@@ -368,7 +368,7 @@ sentiment_contributions %>%
 # 10. Visualizing narrative arcs --------------------------------------------------------------
 tidy_shakespeare %>%
   inner_join(get_sentiments("bing")) %>%
-  count(title, type, index = linenumber %/% 70, sentiment) %>%
+  count(title, type, index = linenumber %/% 70, sentiment) %>% # Count using four arguments, chunk of 70 lines at a time! "This makes chunks of text that are 70 lines long using integer division (%/%)"
   spread(sentiment, n, fill = 0) %>%
   mutate(sentiment = positive - negative) %>%
   ggplot(aes(x = index, y = sentiment, fill = type)) + # Put index on x-axis, sentiment on y-axis, and map comedy/tragedy to fill
@@ -376,3 +376,84 @@ tidy_shakespeare %>%
   facet_wrap(~title, scales = "free_x") # Separate panels for each title with facet_wrap(), scales = "free_x" so the x-axes behave nicely!
 # Now this, you do it by yourself
 # and lets open the room for questions
+
+# 1:
+tidy_shakespeare %>%
+  inner_join(get_sentiments("bing"))
+
+# From: http://www.cookbook-r.com/Graphs/Bar_and_line_graphs_(ggplot2)/
+tidy_shakespeare %>%
+  inner_join(get_sentiments("bing")) %>%
+  ggplot(aes(x = sentiment, fill = sentiment)) +
+  geom_bar() + # by default options used: stat = "count"
+  facet_wrap(~title)
+
+# 2:
+tidy_shakespeare %>%
+  inner_join(get_sentiments("bing")) %>%
+  arrange(linenumber) %>%
+  head(20)
+
+tidy_shakespeare %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(title, type, linenumber, sentiment) %>%
+  arrange(linenumber) %>%
+  head(20)
+# ---
+tidy_shakespeare %>%
+  inner_join(get_sentiments("bing")) %>%
+  filter(title == "Romeo and Juliet") %>%
+  arrange(linenumber) %>%
+  head(20) %>%
+  count(title, type, linenumber, sentiment)
+
+tidy_shakespeare %>%
+  inner_join(get_sentiments("bing")) %>%
+  filter(title == "Romeo and Juliet") %>%
+  arrange(linenumber) %>%
+  head(20) %>%
+  count(title, type, index = linenumber %/% 70, sentiment)
+# --
+
+# Now it should be easy to understand:
+tidy_shakespeare %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(title, type, index = linenumber %/% 70, sentiment) %>%
+  arrange(index)
+# Count using four arguments, chunk of 70 lines at a time! 
+# "This makes chunks of text that are 70 lines long using integer division (%/%)"
+
+# 3:
+tidy_shakespeare %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(title, type, index = linenumber %/% 70, sentiment) %>%
+  spread(sentiment, n)
+
+tidy_shakespeare %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(title, type, index = linenumber %/% 70, sentiment) %>%
+  spread(sentiment, n, fill = 0)
+
+tidy_shakespeare %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(title, type, index = linenumber %/% 70, sentiment) %>%
+  spread(sentiment, n, fill = 0) %>%
+  mutate(sentiment = positive - negative) %>%
+  print(n = 50)
+# or:
+tmp <- tidy_shakespeare %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(title, type, index = linenumber %/% 70, sentiment) %>%
+  spread(sentiment, n, fill = 0) %>%
+  mutate(sentiment = positive - negative)
+View(tmp)
+
+# 4: it is clear now how to plot:
+tidy_shakespeare %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(title, type, index = linenumber %/% 70, sentiment) %>%
+  spread(sentiment, n, fill = 0) %>%
+  mutate(sentiment = positive - negative) %>%
+  ggplot(aes(x = index, y = sentiment, fill = type)) + # Put index on x-axis, sentiment on y-axis, and map comedy/tragedy to fill
+  geom_col() + # Make a bar chart with geom_col()
+  facet_wrap(~title, scales = "free_x") # Separate panels for each title with facet_wrap(), scales = "free_x" so the x-axes behave nicely!
